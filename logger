@@ -1,0 +1,100 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
+import os
+import time
+import platform
+import shutil
+from FTPHelper import FTPHelper
+
+import json
+import os
+import SocketServer
+import time
+import logging
+from datetime import datetime
+# from func.ConnectDB import ConnectDB
+# from Logger import Logger
+import threading
+import serial
+import socket
+# import func.MCS_Download3.config as Config
+import urllib
+dst = ""
+
+class Logger:
+    log_file_path = 'log'
+
+    @staticmethod
+    def SetLogFileName(sn, model, station, ext=".txt"):
+        # # # # # # # # # # # # # # # # # # # # # 
+        #  Create new folder according to date  #
+        # # # # # # # # # # # # # # # # # # # # #
+        date = time.strftime("%Y%m%d", time.localtime())
+        date_detail = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
+
+        # if platform.system() == "Windows" :
+        # directory = "%s%sTestprogram%s" % (os.path.expanduser('~'),os.sep,os.sep) + model + "_" + station + os.sep + date
+        # else :
+        # directory = "%s%sTestprogram%s" % (os.path.expanduser('~'),os.sep,os.sep) + model + "_" + station + os.sep + date
+        directory = os.path.expanduser('~') + os.sep + "Testprogram" + os.sep + model + os.sep + station + os.sep + date
+        # print directory
+        if (not os.path.exists(directory)):
+            os.makedirs(directory)  # Make multi-level directories
+
+        tmp = directory + os.sep + 'PASS'
+        if (not os.path.exists(tmp)):
+            os.makedirs(tmp)  # Make multi-level directories
+        tmp = directory + os.sep + 'FAIL'
+        if (not os.path.exists(tmp)):
+            os.makedirs(tmp)  # Make multi-level directories
+        sn = sn.replace(":","-")
+        log_file_name = sn + "_" + 'test_result' + "_" + date_detail + ext
+
+        Logger.log_file_path = directory + os.sep + log_file_name
+        #print Logger.log_file_path
+
+    @staticmethod
+    def Write(message):
+        file_object = open(Logger.log_file_path, 'a')
+        date_time_now = time.strftime('%Y%m%d%H%M%S', time.localtime())
+        file_object.writelines(date_time_now + ' -- ' + message.encode('utf-8') + '\n')
+        file_object.close()
+
+    @staticmethod
+    def MoveLogByResult(test_result):
+        # if test_result.upper() != 'PASS':
+        #     test_result = 'FAIL'
+        # src = Logger.log_file_path
+        # print test_result
+        # dst = Logger.log_file_path.replace('test_result', test_result)
+        # index = dst.rfind(os.sep)
+        # dst = dst[:index] + os.sep + test_result + dst[index:]
+        # shutil.move(src, dst)
+        print (os.path.expanduser('~'))
+
+        ftp = FTPHelper()
+        date = time.strftime("%Y%m%d", time.localtime())
+        # date_detail = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
+        # dst = "C:%sTestingData%s" % (os.sep,os.sep) + "V73AECU_[Download]" + os.sep + date
+        # remotepath = dst.replace(os.path.expanduser('~') + os.sep + "TestingData" + os.sep + "V73AECU_[Download]" + os.sep + date, '/' + date +'/')
+        dst = 'C:'+os.sep+'TestingData'+os.sep+'V73AECU_[Download]' + os.sep + date
+        for root, dirs, files in os.walk(dst):
+            for file in files:
+                filename = file
+                localfile = dst + os.sep+ file
+                print (filename)
+        remotepath = dst.replace(dst, os.sep + date + os.sep)
+        print ('~~~~~~~~~~~~~~11111111111111')
+        remotepath = remotepath.replace(os.sep, '/')
+        # dst = dst.replace(os.sep, '/')
+        print (remotepath,localfile)
+
+        ftp.Upload(remotepath+filename, localfile)
+
+
+if __name__ == '__main__':
+    # Logger.SetLogFileName('xxxx', 'xxx', 'xx')
+    # Logger.Write('Hello')
+    # raw_input()
+    Logger.MoveLogByResult('PASS')
