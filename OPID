@@ -1,0 +1,158 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+import sys
+if sys.version_info[0] < 3:
+    from Tkinter import *  # # Python 2.x
+else:
+    from tkinter import *  # # Python 3.x
+
+
+class OPIDDialog:
+
+    def __init__(self):
+        self.root = Tk()
+        self.maxLength = 8
+        self.Result = False
+        self.OperatorID = None
+        self.Glueweight_1 = None
+        self.Glueweight_2 = None
+        self.Glueweight_3 = None
+        self.Glueweight_4 = None
+        self.setWindow()
+        self.resizeWindow()
+        self.createWidgets()
+
+    def setWindow(self):
+        screenwidth = self.root.winfo_screenwidth()
+        #print "screenwidth" + str(screenwidth)
+        screenheight = self.root.winfo_screenheight()
+        self.w = screenwidth * 0.3
+        self.h = screenheight * 0.2
+        self.x = screenwidth * 0.3
+        self.y = screenheight * 0.3
+        #print u"w/25" + str(self.w / 25)
+        self.fontSize = int(round(self.w / 40)) + 2
+        #print self.fontSize
+        self.root.title("Scan OPID")
+
+    def resizeWindow(self):
+        # 设置窗口大小注意：是x 不是*
+        self.root.geometry('%dx%d+%d+%d' % (self.w, self.h, self.x, self.y))
+        self.root.overrideredirect(0)
+        # 设置窗口是否可以变化长/宽，False不可变，True可变，默认为True
+        self.root.resizable(width=False, height=False)
+
+    def createWidgets(self):
+        # 创建Label
+        self.labelOPID = Label(self.root, text="OPID: ", font=("Arial", self.fontSize))
+        self.labelOPID.place(anchor="w", relx=0.1, rely=0.10)
+
+
+        # 绑定创建StringVar() txtOPID
+        self.txtOPID = StringVar()  # 创建Entry OPID
+        self.txtOPID.trace("w", self.autoUpperCase)  # 内容自动转成大写
+
+
+        
+        def bindEvents(self):
+            self.editOPID.bind('<Key-Return>', self.onKeyReturn)
+
+        # 创建Entry editOPID
+        self.editOPID = Entry(
+            self.root,
+            width=20,
+            font=("Arial", self.fontSize),
+            textvariable=self.txtOPID)
+        self.editOPID.place(anchor="w", relx=0.25, rely=0.10)
+        self.editOPID.focus_set()
+        # 绑定敲Enter事件
+        self.editOPID.bind('<Key-Return>', self.onKeyReturn)
+
+        # 创建Button OK
+        self.btnOK = Button(
+            self.root,
+            text="OK",
+            font=("Arial", self.fontSize),
+            height=1,
+            width=8,
+            command=self.onBnClickedOK)
+        self.btnOK.place(anchor="center", relx=0.3, rely=0.6)
+        self.btnOK.bind('<Key-Return>', self.onKeyReturn)
+
+        # 创建Button Cancel
+        self.btnCancel = Button(
+            self.root,
+            text="Cancel",
+            font=("Arial", self.fontSize),
+            height=1,
+            width=8,
+            command=self.onBnClickedCancel)
+        self.btnCancel.place(anchor="center", relx=0.7, rely=0.6)
+
+        self.labelMessage = Label(self.root, text="", font=("Arial", self.fontSize - 2))
+        self.labelMessage.place(anchor="w", relx=0.05, rely=0.86)
+    
+
+
+    def onBnClickedOK(self):
+        content = self.editOPID.get()
+
+        if len(content) == self.maxLength:
+            self.Result = True
+            self.OperatorID = content
+            self.close_window()
+        else:
+            self.ShowMessage('OPID Should be 8 bits!')
+        
+
+    def onBnClickedCancel(self):
+        content = self.editOPID.get()
+        if len(content) < self.maxLength:
+            self.ShowMessage('OPID Should be 8 bits!')
+        else:
+            self.close_window()
+        
+    def onKeyReturn(self, event):
+        print("debug")
+        if len(self.txtOPID.get()) == self.maxLength:
+            self.onBnClickedOK()
+        else:
+            self.ShowMessage('OPID Should be 8 bits!')
+        
+
+    def autoUpperCase(self, *arg):
+        self.ShowMessage('')
+        content = self.txtOPID.get().upper()
+        if len(content) > self.maxLength:
+            content = content[:-1]
+        self.txtOPID.set(content)
+
+    def ShowMessage(self, message, status=False):
+        if status:
+            self.labelMessage.configure(text=message, foreground="#005737")
+        else:
+            self.labelMessage.configure(text=message, foreground="RED")
+
+    def close_window(self):
+        self.root.destroy()
+
+    def showDialog(self):
+        self.root.mainloop()
+        return self.Result
+
+    def mainloop(self):
+        self.root.mainloop()
+        return self.Result
+
+
+def main():
+    app = OPIDDialog()  # 创建窗口对象的背景色
+    # app.showDialog()                 # 进入消息循环
+    if app.showDialog():
+        print ('True')
+    else:
+        print ('False')
+
+
+if __name__ == '__main__':
+    main()
