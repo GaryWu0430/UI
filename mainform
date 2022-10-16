@@ -1,0 +1,782 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+from tkinter import *
+#from tkSimpleDialog import *
+#from itertools import count
+import socket
+import os
+import time
+import platform
+import json
+from func.ConnectDB import ConnectDB
+from ui.OPID import OPIDDialog
+from ui.FormFixture import FixtureDialog
+import threading
+from func.Logger import Logger
+from FormPassword import FormPassword
+from tkinter import messagebox
+import sys
+# ********************************************************************
+# **              Release Note
+# **                                        Andy
+# ** 1.  Config.json add ProgramType for automation or manual
+# ** 2. Modify MainForm : Must input OPID and choice  ProgramType
+# ********************************************************************
+
+_PROGRAM_VERSION_ = '1.0.0.1'
+_XML_VERSION_ = '1.0'
+
+
+
+class MainForm():
+    def __init__(self):
+        self.OPID = ''
+        self.Glueweight1 = ''
+        self.Glueweight2 = ''
+        self.Glueweight3 = ''
+
+        self.pass_count = 0
+        self.fail_count = 0
+        self.flag_processing = False
+        self.is_runing = False
+        OPIDDlg = OPIDDialog()   #显示工号输入窗口，获得输入的工号
+        if OPIDDlg.mainloop():
+            self.OPID = OPIDDlg.OperatorID
+
+        if self.OPID == "" :
+            sys.exit( "Need to input OPID" )
+        
+        if OPIDDlg.mainloop():
+            self.Glueweight1 = OPIDDlg.Glueweight_1
+
+        if self.Glueweight1 == "" :
+            sys.exit( "Need to input Glueweight1" )
+        
+        if OPIDDlg.mainloop():
+            self.Glueweight2 = OPIDDlg.Glueweight_2
+
+        if self.Glueweight2 == "" :
+            sys.exit( "Need to input Glueweight2" )
+
+        if OPIDDlg.mainloop():
+            self.Glueweight3 = OPIDDlg.Glueweight_3
+
+        if self.Glueweight3  == "" :
+            sys.exit( "Need to input Glueweight3" )
+
+        if OPIDDlg.mainloop():
+            self.Glueweight4 = OPIDDlg.Glueweight_4
+
+        if self.Glueweight4  == "" :
+            sys.exit( "Need to input Glueweight4" )
+
+        if OPIDDlg.mainloop():
+            self.Glueweight5 = OPIDDlg.Glueweight_5
+
+        if self.Glueweight5  == "" :
+            sys.exit( "Need to input Glueweight5" )
+
+        if OPIDDlg.mainloop():
+            self.Glueweight6 = OPIDDlg.Glueweight_6
+
+        if self.Glueweight6 == "" :
+            sys.exit( "Need to input Glueweight6" )
+        
+        if OPIDDlg.mainloop():
+            self.Glueweight7 = OPIDDlg.Glueweight_7
+
+        if self.Glueweight7 == "" :
+            sys.exit( "Need to input Glueweight7" )
+
+        if OPIDDlg.mainloop():
+            self.Glueweight8 = OPIDDlg.Glueweight_8
+
+        if self.Glueweight8  == "" :
+            sys.exit( "Need to input Glueweight8" )
+
+        if OPIDDlg.mainloop():
+            self.Glueweight9 = OPIDDlg.Glueweight_9
+
+        if self.Glueweight9  == "" :
+            sys.exit( "Need to input Glueweight9" )
+
+        if OPIDDlg.mainloop():
+            self.Glueweight10 = OPIDDlg.Glueweight_10
+
+        if self.Glueweight10  == "" :
+            sys.exit( "Need to input Glueweight10" )
+
+
+
+        #self.errorcode_list = []
+        self.fixture_sn=None
+        self.InitConfig()
+        
+        #如果治具数量是0，就不再显示治具输入窗口,否则就显示治具输入窗口
+        if self.fixture_num!=0:
+            FormFixtureDlg=FixtureDialog(int(self.fixture_num))
+            if FormFixtureDlg.mainloop():
+                self.fixture_sn=FormFixtureDlg.fixture_sn
+                self.gluesn1 = self.fixture_sn[0]
+                print ("glue1:",self.gluesn1)
+                self.gluesn2 = self.fixture_sn[1]
+                self.gluesn3 = self.fixture_sn[2]
+                self.gluesn4 = self.fixture_sn[3]
+                self.gluesn5 = self.fixture_sn[4]
+                #print(self.fixture_sn)12345
+        self.setWindow()
+        self.stringVar_computer_name = StringVar()
+        self.stringVar_model = StringVar()
+        self.stringVar_operator_ID = StringVar()
+        self.stringVar_Glueweight1 = StringVar()
+        self.stringVar_Glueweight2 = StringVar()
+        self.stringVar_Glueweight3 = StringVar()
+        self.stringVar_Glueweight4 = StringVar()
+        self.stringVar_Glueweight5 = StringVar()
+        self.stringVar_Glueweight6 = StringVar()
+        self.stringVar_Glueweight7 = StringVar()
+        self.stringVar_Glueweight8 = StringVar()
+        self.stringVar_Glueweight9 = StringVar()
+        self.stringVar_Glueweight10 = StringVar()
+        self.stringVar_program_version = StringVar()
+        self.stringVar_sn = StringVar()
+        self.stringVar_station = StringVar()
+        self.stringVar_xml_version = StringVar()
+        self.stringVar_sn1 = StringVar()
+        self.stringVar_sn2 = StringVar()
+        self.stringVar_sn3 = StringVar()
+        self.stringVar_sn4 = StringVar()
+
+
+
+        self.SetComponents()
+        self.LocateComponents()
+        self.bindEvents()
+        self.entry_sn1.focus_set()        
+        
+    def InitConfig(self):
+        config_path = 'Config.json'
+        with open(config_path, 'r') as f:
+            data = json.load(f)
+        #print data
+        self.model_name = data['modelname']
+        self.station_name = data['stationname']
+        self.module_name = data['modulename']
+        self.class_name = data['classname']
+        self.fixture_num=int(data['fixturenum'])
+        self.ProgramType = data["ProgramType"]
+        
+    def setWindow(self):
+        self.root = Tk()
+        self.master = Frame(self.root)  # , bg='GREEN'
+
+        self.root.title('PU11' + ' V' + _PROGRAM_VERSION_)
+        self.w, self.h = self.root.winfo_screenwidth(), self.root.winfo_screenheight()  # Set maximum size 
+        screenwidth = self.root.winfo_screenwidth()
+        screenheight = self.root.winfo_screenheight()
+        self.x = (screenwidth - self.w) * 0.5
+        self.y = (screenheight - self.h) * 0.5
+        
+        self.root.geometry('%dx%d+%d+%d' % (self.w, self.h, self.x, self.y))
+        self.background = self.root.cget('bg')
+        
+    def SetComponents(self):   
+        
+        normalsize = int(round(self.w / 100)) 
+        smallsize = int(round(normalsize * 0.75)) 
+        #print smallsize
+        largesize = normalsize * 2
+        titlesize = int(round(largesize * 1.5))
+        statussize = largesize * 2
+        buttonsize = int(round(largesize * 0.75))
+        
+        font_family_name = 'FreeMono'
+        
+        fontsmall = (font_family_name, smallsize)  # the font width should be same size,幼圆,宋体,新宋体,Lucida Sans Typewriter,GungsuhChe,宋体,Consolas,Monospace,Arail,FreeMono
+        fontnormal = (font_family_name, normalsize)
+        fontlarge = (font_family_name, largesize)
+        fonttitle = (font_family_name, titlesize)
+        fontstatus = (font_family_name, statussize)
+        fontbutton = (font_family_name, buttonsize)
+        
+        frame_left_width = int(round(self.w * 0.2 / 100)) * 100
+        frame_right_top_height = int(round(self.h * 0.2 / 100)) * 100
+        frame_right_middle_height = frame_right_top_height / 1.2
+               
+        self.master.pack(expand=YES, fill=BOTH)
+        
+        self.frame_left = Frame(self.master, width=frame_left_width, relief='groove', borderwidth=2)  # , borderwidth=5
+        self.frame_left.pack(side=LEFT, padx=5, pady=10, fill=Y)
+        
+        self.frame_right = Frame(self.master, relief='groove', borderwidth=2)  # , bg='GREEN'
+        self.frame_right.pack(expand=YES, side=RIGHT, padx=5, pady=10, fill=BOTH)
+        
+        self.frame_right_top = Frame(self.frame_right, height=frame_right_top_height, relief='groove', borderwidth=2)
+        self.frame_right_top.pack(side=TOP, padx=0, pady=0, fill=X)
+        
+        self.frame_right_middle = Frame(self.frame_right, height=frame_right_middle_height)  # , bg='GREEN'
+        self.frame_right_middle.pack(side=TOP, padx=0, pady=10, fill=X)
+        
+        self.frame_right_bottom = Frame(self.frame_right, relief='groove', borderwidth=2)
+        self.frame_right_bottom.pack(expand=YES, side=TOP, padx=0, pady=0, fill=BOTH)
+        
+        self.frame_right_message = Frame(self.frame_right_bottom)
+        
+        self.stringVar_model.set(self.model_name)
+        self.label_model_name = Label(self.frame_left, text='Model: ', font=fontnormal)
+        self.entry_model = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_model)
+        
+        self.stringVar_station.set(self.station_name)
+        self.label_station_name = Label(self.frame_left, text='Station: ', font=fontnormal)
+        self.entry_station = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_station)
+
+        self.stringVar_program_version.set('')
+        self.label_program_version = Label(self.frame_left, text='Version:', font=fontnormal)
+        self.entry_program_version = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_program_version)
+        
+        self.stringVar_xml_version.set('')
+        self.label_xml_version = Label(self.frame_left, text='Xml Ver.:', font=fontnormal)
+        self.entry_xml_version = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_xml_version)
+        
+        self.stringVar_operator_ID.set(self.OPID)
+        self.label_operator_ID = Label(self.frame_left, text='OPID:', font=fontnormal)
+        self.entry_operator_ID = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_operator_ID)
+        print ("OPID:",self.OPID)
+
+
+        self.stringVar_Glueweight1.set(self.Glueweight1)
+        self.label_Glueweight1 = Label(self.frame_left, text='1400A:', font=fontnormal)
+        self.entry_Glueweight1 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight1)
+        print ("strGlue:",self.Glueweight1)
+        print ("entry:",self.Glueweight1)
+
+        self.stringVar_Glueweight2.set(self.Glueweight2)
+        self.label_Glueweight2 = Label(self.frame_left, text='6560A-1:', font=fontnormal)
+        self.entry_Glueweight2 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight2)
+
+        self.stringVar_Glueweight3.set(self.Glueweight3)
+        self.label_Glueweight3 = Label(self.frame_left, text='6560A-2:', font=fontnormal)
+        self.entry_Glueweight3 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight3)
+
+        self.stringVar_Glueweight4.set(self.Glueweight4)
+        self.label_Glueweight4 = Label(self.frame_left, text='6560A-3:', font=fontnormal)
+        self.entry_Glueweight4 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight4)
+
+        self.stringVar_Glueweight5.set(self.Glueweight5)
+        self.label_Glueweight5 = Label(self.frame_left, text='6560A-4:', font=fontnormal)
+        self.entry_Glueweight5 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight5)
+
+        self.stringVar_Glueweight6.set(self.Glueweight6)
+        self.label_Glueweight6 = Label(self.frame_left, text='1400B:', font=fontnormal)
+        self.entry_Glueweight6 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight6)
+
+        self.stringVar_Glueweight7.set(self.Glueweight7)
+        self.label_Glueweight7 = Label(self.frame_left, text='6560B-1:', font=fontnormal)
+        self.entry_Glueweight7 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight7)
+
+        self.stringVar_Glueweight8.set(self.Glueweight8)
+        self.label_Glueweight8 = Label(self.frame_left, text='6560B-2:', font=fontnormal)
+        self.entry_Glueweight8 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight8)
+
+        self.stringVar_Glueweight9.set(self.Glueweight9)
+        self.label_Glueweight9 = Label(self.frame_left, text='6560B-3:', font=fontnormal)
+        self.entry_Glueweight9 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight9)
+
+        self.stringVar_Glueweight10.set(self.Glueweight10)
+        self.label_Glueweight10 = Label(self.frame_left, text='6560B-4:', font=fontnormal)
+        self.entry_Glueweight10 = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_Glueweight10)
+        
+        self.stringVar_computer_name.set(socket.gethostname())
+        self.label_computer_name = Label(self.frame_left, text='PC Name:', font=fontnormal)
+        self.entry_computer_name = Entry(self.frame_left, width=15, font=fontnormal, state=DISABLED, textvariable=self.stringVar_computer_name)
+
+        self.label_total = Label(self.frame_left, text='Total', width=5, font=fontnormal)
+        self.label_total_item = Label(self.frame_left, text='0', width=3, font=fontnormal)
+        
+        self.label_pass = Label(self.frame_left, text='PASS', width=5, font=fontnormal)
+        self.label_pass_item = Label(self.frame_left, text='0', width=3, font=fontnormal, fg='GREEN')
+        
+        self.label_fail = Label(self.frame_left, text='FAIL', width=5, font=fontnormal)
+        self.label_fail_item = Label(self.frame_left, text='0', width=3, font=fontnormal, fg='RED')
+        
+        self.label_test_time = Label(self.frame_left, text='Test Time', font=fontnormal)
+        self.label_timer = Label(self.frame_left, text='00:00:00.00', font=fontlarge)
+        
+        self.label_title = Label(self.frame_right_top, text=self.model_name + ' ' + self.station_name , font=fonttitle)
+
+        self.label_sn = Label(self.frame_right_middle, text='Serial Number:', font=fontnormal)
+        self.stringVar_sn.set( "" )
+        self.entry_sn = Entry(self.frame_right_middle, width=40, font=fontnormal, textvariable=self.stringVar_sn )
+        self.entry_sn.select_range( 0, END )
+        
+        self.label_sn1 = Label(self.frame_right_middle, text='  Material SN:', font=fontnormal)
+        self.stringVar_sn1.set( "" )
+        self.entry_sn1 = Entry(self.frame_right_middle, width=40, font=fontnormal, textvariable=self.stringVar_sn1 )
+        self.entry_sn1.select_range( 0, END )
+        self.entry_sn1.focus_set()
+
+        self.label_sn2 = Label(self.frame_right_middle, text='  Material SN:', font=fontnormal)
+        self.stringVar_sn2.set( "" )
+        self.entry_sn2 = Entry(self.frame_right_middle, width=40, font=fontnormal, textvariable=self.stringVar_sn2 )
+        self.entry_sn2.select_range( 0, END )
+
+        self.label_sn3 = Label(self.frame_right_middle, text='  Material SN:', font=fontnormal)
+        self.stringVar_sn3.set( "" )
+        self.entry_sn3 = Entry(self.frame_right_middle, width=40, font=fontnormal, textvariable=self.stringVar_sn3 )
+        self.entry_sn3.select_range( 0, END )
+
+        self.label_sn4 = Label(self.frame_right_middle, text='  Fixture:', font=fontnormal)
+        self.stringVar_sn4.set( "" )
+        self.entry_sn4 = Entry(self.frame_right_middle, width=40, font=fontnormal, textvariable=self.stringVar_sn4 )
+        self.entry_sn4.select_range( 0, END )
+
+        self.button_start = Button(self.frame_right_middle, text='Start', width=10, font=fontbutton)  # height=5, 
+        self.button_finish = Button(self.frame_right_middle, text='Finish', width=10, state=DISABLED , font=fontbutton)  # height=5,
+        
+        self.label_status = Label(self.frame_right_bottom, text='Status:', width=7, font=fontnormal)
+        self.label_status_result = Label(self.frame_right_bottom, text='Ready', width=20, height=2, font=fontstatus , bg='#9696FF')
+
+        display_info = '%-30s%-20s%-20s%-20s%-20s%-20s' % ('Item', 'Result', 'HSpec', 'LSpec', 'Status', 'Description')
+        self.label_display = Label(self.frame_right_bottom, text=display_info, font=fontsmall, anchor='w', justify='left')
+        self.listbox_display = Listbox(self.frame_right_bottom, font=fontsmall, height=15)
+        
+        self.label_shopfloor = Label(self.frame_right_message, text='SF Msg:', width=7, font=fontnormal)
+        self.label_shopfloor_result = Label(self.frame_right_message, font=fontnormal)  # Remove width setting,do not limit width now
+
+
+    def LocateComponents(self):
+        fl_k_relx = 0.05
+        fl_v_relx = 0.4
+        self.label_model_name.place(anchor='w', relx=fl_k_relx, rely=0.03)
+        self.entry_model.place(anchor='w', relx=fl_v_relx, rely=0.03)
+        
+        self.label_station_name.place(anchor='w', relx=fl_k_relx, rely=0.06)
+        self.entry_station.place(anchor='w', relx=fl_v_relx, rely=0.06)
+        
+        self.label_program_version.place(anchor='w', relx=fl_k_relx, rely=0.09)
+        self.entry_program_version.place(anchor='w', relx=fl_v_relx, rely=0.09)
+        
+        self.label_xml_version.place(anchor='w', relx=fl_k_relx, rely=0.12)
+        self.entry_xml_version.place(anchor='w', relx=fl_v_relx, rely=0.12)
+        
+        
+        self.label_operator_ID.place(anchor='w', relx=fl_k_relx , rely=0.17)
+        self.entry_operator_ID.place(anchor='w', relx=fl_v_relx, rely=0.17)
+
+        self.label_Glueweight1.place(anchor='w', relx=fl_k_relx , rely=0.22)
+        self.entry_Glueweight1.place(anchor='w', relx=fl_v_relx, rely=0.22)
+
+        self.label_Glueweight2.place(anchor='w', relx=fl_k_relx , rely=0.25)
+        self.entry_Glueweight2.place(anchor='w', relx=fl_v_relx, rely=0.25)
+
+        self.label_Glueweight3.place(anchor='w', relx=fl_k_relx , rely=0.28)
+        self.entry_Glueweight3.place(anchor='w', relx=fl_v_relx, rely=0.28)
+
+        self.label_Glueweight4.place(anchor='w', relx=fl_k_relx , rely=0.31)
+        self.entry_Glueweight4.place(anchor='w', relx=fl_v_relx, rely=0.31)
+
+        self.label_Glueweight5.place(anchor='w', relx=fl_k_relx , rely=0.34)
+        self.entry_Glueweight5.place(anchor='w', relx=fl_v_relx, rely=0.34)
+
+        self.label_Glueweight6.place(anchor='w', relx=fl_k_relx , rely=0.4)
+        self.entry_Glueweight6.place(anchor='w', relx=fl_v_relx, rely=0.4)
+
+        self.label_Glueweight7.place(anchor='w', relx=fl_k_relx , rely=0.43)
+        self.entry_Glueweight7.place(anchor='w', relx=fl_v_relx, rely=0.43)
+
+        self.label_Glueweight8.place(anchor='w', relx=fl_k_relx , rely=0.46)
+        self.entry_Glueweight8.place(anchor='w', relx=fl_v_relx, rely=0.46)
+
+        self.label_Glueweight9.place(anchor='w', relx=fl_k_relx , rely=0.49)
+        self.entry_Glueweight9.place(anchor='w', relx=fl_v_relx, rely=0.49)
+
+        self.label_Glueweight10.place(anchor='w', relx=fl_k_relx , rely=0.52)
+        self.entry_Glueweight10.place(anchor='w', relx=fl_v_relx, rely=0.52)
+
+
+        
+        self.label_computer_name.place(anchor='w', relx=fl_k_relx , rely=0.90)
+        self.entry_computer_name.place(anchor='w', relx=fl_v_relx, rely=0.90)
+
+        self.label_total.place(anchor='w', relx=fl_k_relx, rely=0.55)
+        self.label_total_item.place(anchor='w', relx=fl_v_relx, rely=0.55)
+        
+        self.label_pass.place(anchor='w', relx=fl_k_relx, rely=0.60)
+        self.label_pass_item.place(anchor='w', relx=fl_v_relx, rely=0.60)
+                
+        self.label_fail.place(anchor='w', relx=fl_k_relx, rely=0.65)
+        self.label_fail_item.place(anchor='w', relx=fl_v_relx, rely=0.65)
+        
+        self.label_test_time.place(anchor='w', relx=fl_k_relx, rely=0.7)
+        self.label_timer.place(anchor='w', relx=fl_k_relx, rely=0.75)
+        
+        self.label_title.pack(expand=YES, side=TOP, padx=10, pady=0, fill=BOTH)
+        
+        frm_rely = 0.25
+
+        self.label_sn.place(anchor='w', relx=0.02, rely=frm_rely*0.5)
+        self.entry_sn.place(anchor='w', relx=0.16, rely=frm_rely*0.5)
+
+        self.label_sn1.place(anchor='w', relx=0.02, rely=frm_rely*1.5)
+        self.entry_sn1.place(anchor='w', relx=0.16, rely=frm_rely*1.5)
+
+        self.label_sn2.place(anchor='w', relx=0.02, rely=frm_rely*2.5)
+        self.entry_sn2.place(anchor='w', relx=0.16, rely=frm_rely*2.5)
+
+        self.label_sn3.place(anchor='w', relx=0.02, rely=frm_rely*3.5)
+        self.entry_sn3.place(anchor='w', relx=0.16, rely=frm_rely*3.5)
+
+        self.label_sn4.place(anchor='w', relx=0.5, rely=frm_rely*0.5)
+        self.entry_sn4.place(anchor='w', relx=0.6, rely=frm_rely*0.5)
+        
+        # self.label_sn1.place(anchor='w', relx=0.02, rely=frm_rely)
+        # self.entry_sn1.place(anchor='w', relx=0.12, rely=frm_rely)
+
+        # self.label_sn2.place(anchor='w', relx=0.02, rely=frm_rely*2)
+        # self.entry_sn2.place(anchor='w', relx=0.12, rely=frm_rely*2)
+
+        # self.label_sn.place(anchor='w', relx=0.02, rely=frm_rely*3)
+        # self.entry_sn.place(anchor='w', relx=0.12, rely=frm_rely*3)
+
+       
+        self.button_finish.place(anchor='w', relx=0.85, rely=0.45)
+        self.button_start.place(anchor='w', relx=0.7, rely=0.45)
+
+        self.label_status_result.pack(side=TOP, padx=10, pady=10, fill=X)        
+        
+        self.label_display.pack(side=TOP, padx=10, pady=0, fill=X)
+        self.listbox_display.pack(side=TOP, padx=10, pady=0, fill=BOTH)
+        
+        self.frame_right_message.pack(side=TOP, padx=10, pady=10, fill=X)
+        self.label_shopfloor.pack(side=LEFT, padx=10, pady=0)
+        self.label_shopfloor_result.pack(side=LEFT, padx=10, pady=0)
+    
+    def bindEvents(self):
+        self.stringVar_sn.trace('w', self.AutoUpperCase)
+        self.button_start.config(command=self.OnBnClickedStart)
+        self.button_finish.config(command=self.OnBnClickedFinish)
+        self.entry_sn.bind('<Key-Return>', self.onKeyReturn)
+        self.entry_sn1.bind('<Key-Return>', self.onKeyReturn1)
+        self.entry_sn2.bind('<Key-Return>', self.onKeyReturn2)
+        self.entry_sn3.bind('<Key-Return>', self.onKeyReturn3)
+        self.entry_sn4.bind('<Key-Return>', self.ReturnKeyDown)
+        # self.entry_sn1.bind('<Key-Return>', self.onKeyReturn)
+        # self.entry_sn2.bind('<Key-Return>', self.onKeyReturn1)
+        # self.entry_sn.bind('<Key-Return>', self.ReturnKeyDown)
+
+    def onKeyReturn(self,event):
+        self.entry_sn1.focus_set()        
+
+    def onKeyReturn1(self,event):        
+        self.entry_sn2.focus_set()
+
+    def onKeyReturn2(self,event):        
+        self.entry_sn3.focus_set()    
+    
+    def onKeyReturn3(self,event):
+        self.entry_sn4.focus_set()
+        
+    def mainloop(self) :
+        self.root.mainloop()
+        
+    def StartTimeCounter(self):
+        elapse = float(time.time() - self.start_time)        
+        strtime = '%02d:%02d:%02d.%02d' % (elapse / 3600, elapse % 3600 / 60, elapse % 60 / 1, int(elapse % 1 * 100 / 1))
+        self.label_timer.config(text=str(strtime))
+        
+        if self.flag_processing:
+            self.label_timer.after(100, self.StartTimeCounter)  # 1000ms
+
+    def AddItemList(self, item, result, high_spec, low_spec, status, description):
+        line = '%-30s%-20s%-20s%-20s%-20s%-20s\n' % (item, result, high_spec, low_spec, status, description)
+        self.listbox_display.insert(0, line)  # 1.0 is the position before the first character of the first line. 
+        
+    def InitTestingItem(self):
+        self.label_timer.configure(text='00:00:00.00')
+        self.listbox_display.delete(0, END)
+        self.label_shopfloor_result.configure(text='', bg=self.background)
+        self.label_status_result.configure(text='', bg=self.background)
+              
+    def OnBnClickedStart(self):
+        self.StartMainThread()
+
+    def OnBnClickedFinish(self):
+        self.StopMainThread('FAIL', 'Button Stop Clicked!')
+
+    def EnableWindow(self, State):
+        if State:
+            self.entry_sn.config(state=NORMAL)
+            self.button_start.config(state=NORMAL)
+            self.button_finish.config(state=DISABLED)
+            self.entry_sn.selection_range( 0, END )
+        else:
+            self.entry_sn.config(state=DISABLED)
+            self.button_start.config(state=DISABLED)
+            self.button_finish.config(state=NORMAL)
+            
+    def SetStatus(self, status):
+        if status.upper() == 'RUNNING...':
+            self.label_status_result.configure(text='Running...', bg='YELLOW')
+        elif status.upper() == 'READY':
+            self.label_status_result.configure(text='Ready', bg='#9696FF')
+        elif status.upper() == 'PASS':
+            self.label_status_result.configure(text='PASS', bg='GREEN')
+        elif status.upper() == 'FAIL':
+            self.label_status_result.configure(text='FAIL', bg='RED')
+        else:
+            self.label_status_result.configure(text=status, bg='RED')
+            
+    
+    def StartMainThread(self):
+
+        self.EnableWindow(False)        
+        if self.flag_processing:
+            return
+        self.flag_processing = True
+        
+        if self.is_runing:
+            return
+        self.is_runing = True
+        
+        self.start_time = time.time()
+        self.InitTestingItem()
+        #ADDed by Ares 2018/11/22
+        print ("==========================")
+        self.sn = self.entry_sn.get()
+        self.gluesn1 = self.entry_sn1.get()
+        print ("Link1:",self.gluesn1)
+        self.gluesn2 = self.entry_sn2.get()
+        print ("Link2:",self.gluesn2)
+        self.gluesn3 = self.entry_sn3.get()
+        print ("Link3:",self.gluesn3)
+        self.gluesn4 = self.entry_sn4.get()
+        print ("Fixture:",self.gluesn4)
+        print("===========================")
+
+
+        if(self.gluesn1==""):
+            self.AddItemList('Material', 'FAIL' , '', '', '', u'please input LCD SN or PCBA SN!!!')
+        if(self.gluesn2==""):
+            self.AddItemList('Material', 'FAIL' , '', '', '', u'please input LCD SN or PCBA SN!!!')
+        if(self.gluesn3==""):
+            self.AddItemList('Material', 'FAIL' , '', '', '', u'please input LCD SN or PCBA SN!!!')
+        if(self.gluesn4==""):
+            self.AddItemList('Material', 'FAIL' , '', '', '', u'please input LCD SN or PCBA SN!!!')
+        if(self.sn==""):
+            self.AddItemList('Seria Number', 'FAIL' , '', '', '', u'please input Seria Number!!!')
+        if(self.gluesn1 == self.gluesn2 or self.gluesn1 == self.gluesn3 or self.gluesn2 == self.gluesn3 or self.gluesn4 == self.gluesn1 or self.gluesn4 == self.gluesn2):
+            self.AddItemList('Status', 'FAIL' , '', '', '', u'ERROR: Duplicate SN! Please rescan barcodes!')
+            self.StopMainThread('FAIL', "Duplicate SN! Please rescan barcodes!")
+            return
+
+        #2019.02.12 alfie edited.
+        self.StartTimeCounter()
+        self.SetStatus('Running...')
+
+        
+        routing_check = ConnectDB()
+        (iResult, iMessage, iParamAll) = routing_check.CheckRoutingFA(self.sn ,'INPUT', self.OPID, self.fixture_sn)       
+        print ('iResult: %s' % iResult)
+        print ('iMessage: %s' % iMessage)
+        message = u'iResult=%s,iMessage=%s,iParamAll=%s' % (iResult, iMessage, iParamAll)        
+        Logger.SetLogFileName(self.sn, self.model_name, self.station_name)
+        Logger.Write('Program Version: %s' % _PROGRAM_VERSION_)
+        Logger.Write('XML Version: %s' % _XML_VERSION_)
+        Logger.Write('SerialNumber: %s' % self.sn)
+        Logger.Write('Model: %s ' % self.model_name)
+        Logger.Write('Station: %s' % self.station_name) 
+        print ('message: %s' % message)
+        Logger.Write(message)    
+    
+        if iResult.upper() == 'PASS' :
+            obj = __import__(self.module_name, fromlist=True)
+            func = self.class_name                    
+            if hasattr(obj, func):
+                func = getattr(obj, func)
+                self.work_thread = func(self)
+                self.work_thread.daemon = True
+                self.work_thread.start()
+                return
+            else:
+                print("404")
+
+        else :
+            self.AddItemList('Status', iResult , iMessage, '', '', iParamAll)
+            self.StopMainThread('FAIL', iMessage)
+            return
+
+    def StopMainThread(self, result='FAIL', message='Message', inputstring=''):
+        
+        if self.ProgramType != "Auto" and result == "PASS" :
+            #self.copy_image(self.sn)
+            handshake = ConnectDB()
+            if(inputstring != ''):
+                inputstring = 'OPID=%s##Result=%s##%s' % (self.OPID, result, inputstring)
+                inputstring += 'glue_9550=%s##glue_1400=%s##glue_6560=%s##glue_1600=%s##FixtureID=%s' %(self.Glueweight1,self.Glueweight2,self.Glueweight3,self.Glueweight4,self.gluesn4)
+                print ("~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print ("inputstring:",inputstring)
+                print ("~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            Logger.Write('UpdateToSF:')
+            Logger.Write('SN=%s' % self.sn)
+            Logger.Write('Station=%s' % self.station_name)
+            Logger.Write('inputstring=%s' % inputstring)
+            if(inputstring != ''):
+                (iResult, iMessage) = handshake.UpdateToFADB(self.sn , self.station_name , result , inputstring)
+                print (self.sn + " " + inputstring)
+                Logger.Write('QMS Response:')
+                Logger.Write('iResult=%s' % iResult)
+                Logger.Write('iMessage=%s' % iMessage)
+                print ('-----------------------------------')
+                print ("Link Result = %s" % iResult) 
+                print ('iMessage: %s' % iMessage)
+                print ('-----------------------------------')
+                Logger.MoveLogByResult(result)
+               
+            if iResult.upper() == "FAIL":
+                result = "FAIL"
+        
+            result = result.strip().upper()
+            self.ShowMessage(message, result)
+            self.SetStatus(result)
+            if result.upper() == 'PASS':
+                self.pass_count = self.pass_count + 1
+            else:
+                self.fail_count = self.fail_count + 1
+            self.label_pass_item.config(text=str(self.pass_count))
+            self.label_fail_item.config(text=str(self.fail_count))
+            self.label_total_item.config(text=str(self.pass_count + self.fail_count))
+        
+            self.EnableWindow(True)
+            self.flag_processing = False
+            self.is_runing = False
+        else :
+            result = result.strip().upper()
+            self.ShowMessage(message, result)
+            self.SetStatus(result)
+            self.EnableWindow(True)
+            self.flag_processing = False
+            self.is_runing = False
+            # Added by Andy 20180904
+            time.sleep( 2 )
+            #self.ResetSNEntry( "ZZ99999" )
+            #self.StartMainThread()
+        #win32api.keybd_event(13,0,0,0)
+        #停止子线程
+        self.entry_sn.delete(0,END)
+        self.entry_sn1.delete(0,END)
+        self.entry_sn2.delete(0,END)
+        self.entry_sn3.delete(0,END)
+        self.entry_sn4.delete(0,END)
+        self.entry_sn.focus_set()
+
+    def copy_image(self,strSN):
+        strSN = strSN.replace(':','_')
+        src_path = "D:\\img"
+        destination_path = "P:\\CCDCheck2"
+
+        # get system current time
+        date = datetime.now() #get the datetime
+        print ("Current date is: %s %s %s" % (date.day, date.month, date.year))
+
+        strdate = str(date.year) + '-' + str(date.month) + '-' + str(date.day)
+        print ("strdate: %s" % strdate)
+
+        strtime = str(date.year) + '-' + str(date.month) + '-' + str(date.day) + "_" + str(date.hour) + "_" + str(date.minute) + "_" + str(date.second)
+        dirpath_name = strtime + '_' + strSN #201908080843_p133r4234
+        final_dest_path = destination_path + os.sep + _Model_ + os.sep + strdate + os.sep + _Station_ + os.sep + dirpath_name
+        
+        for filename in os.listdir(src_path):
+            print ("filename found: %s" % filename)
+            if (not os.path.isfile(src_path + os.sep + filename)):
+                print ("Folder is found. Bypass.")
+            else:
+                print ("Stayrt copying images from %s to %s" % (src_path , destination_path))
+                print ("image to copy: %s" % filename)
+                print ("final destination path: %s" % final_dest_path)
+                if (not os.path.exists(final_dest_path)): #(not os.path.exists(tmp))
+                    print ("Path unexisted")
+                    os.makedirs(final_dest_path)
+                else:
+                    print ("Path existed")
+
+                src_path_file = src_path + os.sep + filename
+                print ("source file: %s" % src_path_file)
+
+                if os.path:
+                    pass
+                if (not os.path.exists(final_dest_path + os.sep + filename)):
+                    print ("%s unexisted" % (final_dest_path + os.sep + filename))
+                    print ("Photo copying ...")
+                    shutil.copy(src_path_file,final_dest_path)
+                else:
+                    print ("%s existed already: %s" % (final_dest_path + os.sep + filename))        
+    
+    def ReturnKeyDown(self, event):
+        # if(self.sn==""):
+        #     self.AddItemList('Status', 'FAIL' , '', '', '', u'please input SN!!!')
+        #     return        
+        self.StartMainThread()
+
+    def ShowMessage(self, message=None, result='FAIL'):
+        if result.upper() == 'PASS':
+            self.label_shopfloor_result.configure(text=message, fg='GREEN')
+        else:
+            self.label_shopfloor_result.configure(text=message, fg='RED')
+
+    def AutoUpperCase(self, *arg):
+        self.stringVar_sn.set(self.stringVar_sn.get().upper())
+
+    def AutoUpperCase1(self, *arg):
+        self.stringVar_sn1.set(self.stringVar_sn1.get().upper())
+
+    def AutoUpperCase2(self, *arg):
+        self.stringVar_sn2.set(self.stringVar_sn2.get().upper())
+    
+    def AutoUpperCase3(self, *arg):
+        self.stringVar_sn3.set(self.stringVar_sn3.get().upper())
+
+    def AutoUpperCase4(self, *arg):
+        self.stringVar_sn4.set(self.stringVar_sn4.get().upper())
+
+
+    def ResetSNEntry( self, serial_number ) :
+        print ("change text")
+        self.entry_sn.config(state=NORMAL)
+        self.stringVar_sn.set( serial_number )
+        self.entry_sn.config( textvariable=self.stringVar_sn  )
+        self.entry_sn.config(state=DISABLED)
+
+
+    def GetDataFromForm( self, key ) :
+        if key == "Model" :
+            return self.model_name
+        elif key == "Station" :
+            return self.station_name
+        elif key == "OPID" :
+            return self.OPID
+        elif key == "Glueweight1" :
+            return self.Glueweight1
+        elif key == "ProgramVersion" :
+            return _PROGRAM_VERSION_
+        elif key == "PCName" :
+            return socket.gethostname()
+        else :
+            return "No Data"
+
+
+def main():
+    app = MainForm()
+    app.mainloop()
+ 
+if __name__ == '__main__':
+    FormPassword = FormPassword(1)
+    if FormPassword.mainloop():
+        fixture_sn = FormPassword.fixture_sn
+    for i in range(1): 
+        if fixture_sn[i] != '12345':
+            messagebox.showinfo("Wrong !!", "need to input correct password")
+            sys.exit('need to input correct password')
+    main()
+
+
+    
